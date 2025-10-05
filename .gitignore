@@ -11,6 +11,19 @@ firebase-debug.*.log*
 .firebase/
 
 # Firebase config
+# Node
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Build
+frontend/dist/
+frontend/build/
+
+# Firebase / VSCode / outros
+.firebase/
+.vscode/
+.DS_Store
 
 # Uncomment this if you'd like others to create their own Firebase project.
 # For a team working on the same Firebase project(s), it is recommended to leave

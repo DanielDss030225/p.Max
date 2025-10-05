@@ -1,7 +1,11 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import { fileURLToPath } from "url";
 import { iniciarLoginAutomático, pesquisarPorRG } from "./services/browserService.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
@@ -26,13 +30,13 @@ app.post("/api/pesquisar", async (req, res) => {
 
 // --- Servir o React Build ---
 
-// Caminho absoluto da pasta do build do React
-const __dirname = path.resolve();
-app.use(express.static(path.join(__dirname, "../frontend/dist"))); // ou "build" se você gerar build em "build"
+// Express vai servir arquivos estáticos do build do React
+const reactBuildPath = path.join(__dirname, "../frontend/build"); // ou "../frontend/build" se usar "build"
+app.use(express.static(reactBuildPath));
 
-// Redirecionar todas as rotas não-API para index.html
+// Redireciona todas as rotas não-API para index.html
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+  res.sendFile(path.join(reactBuildPath, "index.html"));
 });
 
 // --- Iniciar servidor ---
