@@ -20,7 +20,7 @@ app.get("/api/init", async (req, res) => {
   const senha = req.headers["x-senha"];
 
   if (!usuario || !senha) {
-    return res.json({ sucesso: f  alse, mensagem: "Informe usuário e senha." });
+    return res.json({ sucesso: false, mensagem: "Informe usuário e senha." });
   }
 
   try {
