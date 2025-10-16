@@ -41,13 +41,13 @@ app.post("/api/pesquisar", async (req, res) => {
 // --- Servir o React Build ---
 
 // Express vai servir arquivos estáticos do build do React
-const reactBuildPath = path.join(__dirname, "../frontend/build"); // ou "../frontend/build" se usar "build"
-app.use(express.static(reactBuildPath));
+//const reactBuildPath = path.join(__dirname, "../frontend/build"); // ou "../frontend/build" se usar "build"
+//app.use(express.static(reactBuildPath));
 
 // Redireciona todas as rotas não-API para index.html
-app.get("*", (req, res) => {
-  res.sendFile(path.join(reactBuildPath, "index.html"));
-});
+//app.get("*", (req, res) => {
+ // res.sendFile(path.join(reactBuildPath, "index.html"));
+//});
 
 // --- Iniciar servidor ---
 const PORT = process.env.PORT || 3000;
