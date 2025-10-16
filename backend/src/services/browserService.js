@@ -80,8 +80,8 @@ export async function iniciarLoginAutomático(usuario, senha) {
           "--single-process",
           "--disable-gpu"
         ],
-        executablePath: puppeteer.executablePath()
-      });
+  executablePath: process.env.CHROME_PATH || undefined // usa o Chromium instalado
+      }); 
       page = await browser.newPage();
     }
 
