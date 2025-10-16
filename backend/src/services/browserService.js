@@ -1,33 +1,30 @@
 import puppeteer from "puppeteer";
-//import WebSocket, { WebSocketServer } from "ws";
+// import WebSocket, { WebSocketServer } from "ws";
 
+// Credenciais padrão (pode ser removido se usar envio via função)
 const USUARIO = "";
 const SENHA = "";
 
 let browser, page;
 let currentURL = "";
 
-// WebSocket server
-//const wss = new WebSocketServer({ port: 8080 });
+// WebSocket server (opcional)
+// const wss = new WebSocketServer({ port: 8080 });
 
-//wss.on("connection", (ws) => {
- // console.log("[WS] Cliente conectado");
+// wss.on("connection", (ws) => {
+//   console.log("[WS] Cliente conectado");
+//   if (currentURL) {
+//     ws.send(JSON.stringify({ tipo: "URL", mensagem: currentURL }));
+//     sendToFrontend("LOG", "Frontend reconectado. Status do backend enviado.");
+//   }
+// });
 
-//  if (currentURL) {
- //   ws.send(JSON.stringify({ tipo: "URL", mensagem: currentURL }));
-  //  sendToFrontend("LOG", "Frontend reconectado. Status do backend enviado.");
-  //}
-//});
-
-
-
-// Enviar mensagens ao frontend
+// Enviar mensagens ao frontend ou log
 function sendToFrontend(tipo, mensagem) {
   console.log(`[${tipo}] ${mensagem}`);
-
 }
 
-// Atualiza URL
+// Atualiza URL atual
 async function updateURL(url) {
   if (url !== currentURL) {
     currentURL = url;
@@ -56,15 +53,15 @@ async function fecharPopups(page) {
           popup.click(),
           page.waitForFunction(() => !document.querySelector("div.modal.show"), { timeout: 5000 })
         ]);
-        sendToFrontend("Carregando recursos iniciais...");
+        sendToFrontend("LOG", "Pop-up fechado");
         return true;
       }
-    } catch {}
+    } catch { alert("erro");}
   }
   return false;
 }
 
-// Fluxo completo do login/navegação
+// Inicializa login e navegador
 export async function iniciarLoginAutomático(usuario, senha) {
   try {
     if (!usuario || !senha) {
@@ -72,7 +69,19 @@ export async function iniciarLoginAutomático(usuario, senha) {
     }
 
     if (!browser || !page) {
-browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-zygote",
+          "--single-process",
+          "--disable-gpu"
+        ],
+        executablePath: puppeteer.executablePath()
+      });
       page = await browser.newPage();
     }
 
@@ -96,6 +105,7 @@ browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
       sendToFrontend("LOG", "Login concluído");
     }
 
+    // Fecha pop-ups
     let popupsFechados = true;
     while (popupsFechados) {
       popupsFechados = await fecharPopups(page);
@@ -125,7 +135,7 @@ browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
   }
 }
 
-// Pesquisar RG + Coletar dados
+// Pesquisar RG e coletar dados
 export async function pesquisarPorRG(rg) {
   if (!page) return { sucesso: false, mensagem: "Sessão não iniciada" };
 
@@ -151,77 +161,68 @@ export async function pesquisarPorRG(rg) {
       rg
     );
 
-    // Coleta dados com artigos de inquérito
-const dados = await page.evaluate(() => {
-  const getValue = (name) => document.querySelector(`input[name='${name}']`)?.value?.trim() || "";
+    const dados = await page.evaluate(() => {
+      const getValue = (name) => document.querySelector(`input[name='${name}']`)?.value?.trim() || "";
 
-  let quantidadeInqueritos = "0";
-  let comarcaInquerito = "";
-  let artigos = [];
+      let quantidadeInqueritos = "0";
+      let comarcaInquerito = "";
+      let artigos = [];
 
-  // Procura a tabela principal de inquérito (geralmente a primeira relevante)
-  const tabelas = Array.from(document.querySelectorAll("table[aria-hidden='true']"));
+      const tabelas = Array.from(document.querySelectorAll("table[aria-hidden='true']"));
 
-  // Encontrar a tabela que contém "Quantidade de Inqueritos"
-  const tabelaInquerito = tabelas.find(table => 
-    Array.from(table.querySelectorAll("tr")).some(tr => 
-      tr.querySelector("td span.label")?.textContent.trim() === "Quantidade de Inqueritos:"
-    )
-  );
+      const tabelaInquerito = tabelas.find(table =>
+        Array.from(table.querySelectorAll("tr")).some(tr =>
+          tr.querySelector("td span.label")?.textContent.trim() === "Quantidade de Inqueritos:"
+        )
+      );
 
-  if (tabelaInquerito) {
-    tabelaInquerito.querySelectorAll("tr").forEach(tr => {
-      const label = tr.querySelector("td span.label")?.textContent.trim() || "";
-      const valor = tr.querySelector("td:nth-child(2) span.label")?.textContent.trim() || "";
+      if (tabelaInquerito) {
+        tabelaInquerito.querySelectorAll("tr").forEach(tr => {
+          const label = tr.querySelector("td span.label")?.textContent.trim() || "";
+          const valor = tr.querySelector("td:nth-child(2) span.label")?.textContent.trim() || "";
 
-      if (label === "Quantidade de Inqueritos:") {
-        quantidadeInqueritos = valor;
-      } else if (label === "Comarca Inquerito:") {
-        comarcaInquerito = valor;
-      } else if (label.includes("Lei/Artigo:")) {
-        if (valor && valor.toLowerCase() !== "art" && !artigos.includes(valor)) {
-          artigos.push(valor); // adiciona somente se ainda não estiver no array
-        }
+          if (label === "Quantidade de Inqueritos:") quantidadeInqueritos = valor;
+          else if (label === "Comarca Inquerito:") comarcaInquerito = valor;
+          else if (label.includes("Lei/Artigo:") && valor && valor.toLowerCase() !== "art" && !artigos.includes(valor)) {
+            artigos.push(valor);
+          }
+        });
       }
+
+      return {
+        rg: getValue("num_rg"),
+        nome: getValue("nom_completo"),
+        nomeMae: getValue("nom_mae"),
+        nomePai: getValue("nom_pai"),
+        dataNascimento: getValue("dta_nascimento"),
+        sexo: getValue("des_sexo"),
+        corPele: getValue("des_cor_pele"),
+        corOlhos: getValue("des_cor_olhos"),
+        nacionalidade: getValue("des_nacionalidade"),
+        naturalidade: getValue("des_naturalidade"),
+        uf: getValue("uf"),
+        sinalDesaparecimento: getValue("des_sinal_desaparecimento"),
+        mandadoPrisaoEvento: getValue("des_mandado_prisao"),
+        mandadoPrisaoAtual: getValue("des_mandado_prisao_atual"),
+        prontuario: getValue("num_prontuario"),
+        identidadeFalsa: getValue("identidade_falsa"),
+        quantidadeInqueritos,
+        comarcaInquerito,
+        artigosInqueritos: artigos
+      };
     });
-  }
 
-  return {
-    rg: getValue("num_rg"),
-    nome: getValue("nom_completo"),
-    nomeMae: getValue("nom_mae"),
-    nomePai: getValue("nom_pai"),
-    dataNascimento: getValue("dta_nascimento"),
-    sexo: getValue("des_sexo"),
-    corPele: getValue("des_cor_pele"),
-    corOlhos: getValue("des_cor_olhos"),
-    nacionalidade: getValue("des_nacionalidade"),
-    naturalidade: getValue("des_naturalidade"),
-    uf: getValue("uf"),
-    sinalDesaparecimento: getValue("des_sinal_desaparecimento"),
-    mandadoPrisaoEvento: getValue("des_mandado_prisao"),
-    mandadoPrisaoAtual: getValue("des_mandado_prisao_atual"),
-    prontuario: getValue("num_prontuario"),
-    identidadeFalsa: getValue("identidade_falsa"),
-    quantidadeInqueritos,
-    comarcaInquerito,
-    artigosInqueritos: artigos
-  };
-});
-
-
-
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ tipo: "DADOS_INDIVIDUO", dados }));
-      }
-    });
+    // Envia dados via WebSocket se estiver habilitado
+    // wss.clients.forEach(client => {
+    //   if (client.readyState === WebSocket.OPEN) {
+    //     client.send(JSON.stringify({ tipo: "DADOS_INDIVIDUO", dados }));
+    //   }
+    // });
 
     sendToFrontend("LOG", `Dados coletados do RG ${rg}`);
     return { sucesso: true, mensagem: "Pesquisa concluída ✅", dados };
-
   } catch (err) {
-    sendToFrontend("Ops, RG não encontrado ou AcessoSIDS fora do ar, favor tentar novamente mais tarde.");
+    sendToFrontend("ERRO", `Ops, RG não encontrado ou SIDS fora do ar: ${err.message}`);
     return { sucesso: false, mensagem: "Ops, RG não encontrado ou AcessoSIDS fora do ar, favor tentar novamente mais tarde.", erro: err.message };
   }
 }

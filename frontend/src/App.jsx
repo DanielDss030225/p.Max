@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+const API_URL = "https://p-max.onrender.com";
 
 function DadosIndividuo({ dados }) {
   if (!dados) return null;
@@ -58,17 +59,19 @@ function App() {
 useEffect(() => {
   if (!logado) return;
 
-  fetch("https://p-max.onrender.com/api/init", {
+  fetch(`${API_URL}/api/init`, {
     headers: {
       "x-usuario": localStorage.getItem("usuario"),
       "x-senha": localStorage.getItem("senha")
     }
   })
     .then(res => res.json())
-    .then(data => setMensagem(data.mensagem))
+    .then(data => {
+      setMensagem(data.mensagem);
+      if (data.sucesso) setProntoParaPesquisa(true); // ⚡ importante
+    })
     .catch(err => setMensagem("Erro ao inicializar sessão: " + err.message));
 }, [logado]);
-
 
 const handleLogout = () => {
   localStorage.removeItem("usuario");
@@ -87,43 +90,47 @@ const handleLogout = () => {
 };
 
 
-  const handlePesquisar = async () => {
-    const rgSomenteNumeros = rg.replace(/\D/g, "");
+const handlePesquisar = async () => {
+  const rgSomenteNumeros = rg.replace(/\D/g, "");
 
-    if (!rg) {
-      setMensagem("⚠️ Informe o RG antes de pesquisar.");
-      return;
+  if (!rg) {
+    setMensagem("⚠️ Informe o RG antes de pesquisar.");
+    return;
+  }
+
+  if (rg !== rgSomenteNumeros) {
+    setMensagem("⚠️ RG inválido! Apenas números são permitidos.");
+    return;
+  }
+
+  if (rg.length < 5 || rg.length > 9) {
+    setMensagem("⚠️ RG inválido! O RG deve ter entre 5 e 9 dígitos.");
+    return;
+  }
+
+  setMensagem("Pesquisando...");
+  setDados(null);
+  setCarregando(true);
+
+  try {
+    const resp = await fetch(`${API_URL}/api/pesquisar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rg })
+    });
+
+    const data = await resp.json();
+    setMensagem(data.mensagem?.trim() || "Aguarde...");
+
+    if (data.sucesso) {
+      setDados(data.dados || null);
     }
-
-    if (rg !== rgSomenteNumeros) {
-      setMensagem("⚠️ RG inválido! Apenas números são permitidos.");
-      return;
-    }
-
-    if (rg.length < 5 || rg.length > 9) {
-      setMensagem("⚠️ RG inválido! O RG deve ter entre 5 e 9 dígitos.");
-      return;
-    }
-
-    setMensagem("Pesquisando...");
-    setDados(null);
-    setCarregando(true);
-
-    try {
-      const resp = await fetch("https://p-max.onrender.com/api/pesquisar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rg })
-      });
-      const data = await resp.json();
-      setMensagem(data.mensagem && data.mensagem.trim() ? data.mensagem : "Aguarde...");
-      if (data.sucesso) setDados(data.dados || null);
-      else setCarregando(false);
-    } catch (err) {
-      setMensagem("Erro na pesquisa: " + err.message);
-      setCarregando(false);
-    }
-  };
+  } catch (err) {
+    setMensagem("Erro na pesquisa: " + err.message);
+  } finally {
+    setCarregando(false); // garante que sempre para o carregamento
+  }
+};
 
   // Se não logado, renderiza a tela de login
   if (!logado) {
