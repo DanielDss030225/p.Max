@@ -1,31 +1,30 @@
 import puppeteer from "puppeteer";
-import WebSocket, { WebSocketServer } from "ws";
+//import WebSocket, { WebSocketServer } from "ws";
 
-const USUARIO = "PM1847714";
-const SENHA = "Jks#030225";
+const USUARIO = "";
+const SENHA = "";
 
 let browser, page;
 let currentURL = "";
 
 // WebSocket server
-const wss = new WebSocketServer({ port: 8080 });
-wss.on("connection", (ws) => {
-  console.log("[WS] Cliente conectado");
+//const wss = new WebSocketServer({ port: 8080 });
 
-  if (currentURL) {
-    ws.send(JSON.stringify({ tipo: "URL", mensagem: currentURL }));
-    sendToFrontend("LOG", "Frontend reconectado. Status do backend enviado.");
-  }
-});
+//wss.on("connection", (ws) => {
+ // console.log("[WS] Cliente conectado");
+
+//  if (currentURL) {
+ //   ws.send(JSON.stringify({ tipo: "URL", mensagem: currentURL }));
+  //  sendToFrontend("LOG", "Frontend reconectado. Status do backend enviado.");
+  //}
+//});
+
+
 
 // Enviar mensagens ao frontend
 function sendToFrontend(tipo, mensagem) {
   console.log(`[${tipo}] ${mensagem}`);
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ tipo, mensagem, url: currentURL }));
-    }
-  });
+
 }
 
 // Atualiza URL
@@ -73,7 +72,7 @@ export async function iniciarLoginAutomático(usuario, senha) {
     }
 
     if (!browser || !page) {
-      browser = await puppeteer.launch({ headless: false, args: ["--no-sandbox"] });
+browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
       page = await browser.newPage();
     }
 
