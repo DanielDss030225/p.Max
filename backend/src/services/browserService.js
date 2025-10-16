@@ -1,16 +1,14 @@
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core"; // 👈 usa puppeteer-core para não baixar Chromium
 // import WebSocket, { WebSocketServer } from "ws";
 
-// Credenciais padrão (pode ser removido se usar envio via função)
 const USUARIO = "";
 const SENHA = "";
 
 let browser, page;
 let currentURL = "";
 
-// WebSocket server (opcional)
+// WebSocket server opcional
 // const wss = new WebSocketServer({ port: 8080 });
-
 // wss.on("connection", (ws) => {
 //   console.log("[WS] Cliente conectado");
 //   if (currentURL) {
@@ -56,7 +54,9 @@ async function fecharPopups(page) {
         sendToFrontend("LOG", "Pop-up fechado");
         return true;
       }
-    } catch { alert("erro");}
+    } catch (err) {
+      sendToFrontend("ERRO", `Erro ao fechar pop-up: ${err.message}`);
+    }
   }
   return false;
 }
@@ -80,8 +80,9 @@ export async function iniciarLoginAutomático(usuario, senha) {
           "--single-process",
           "--disable-gpu"
         ],
-  executablePath: process.env.CHROME_PATH || undefined // usa o Chromium instalado
-      }); 
+        executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome"
+      });
+
       page = await browser.newPage();
     }
 
@@ -169,7 +170,6 @@ export async function pesquisarPorRG(rg) {
       let artigos = [];
 
       const tabelas = Array.from(document.querySelectorAll("table[aria-hidden='true']"));
-
       const tabelaInquerito = tabelas.find(table =>
         Array.from(table.querySelectorAll("tr")).some(tr =>
           tr.querySelector("td span.label")?.textContent.trim() === "Quantidade de Inqueritos:"
@@ -212,7 +212,7 @@ export async function pesquisarPorRG(rg) {
       };
     });
 
-    // Envia dados via WebSocket se estiver habilitado
+    // Envia dados via WebSocket se habilitado
     // wss.clients.forEach(client => {
     //   if (client.readyState === WebSocket.OPEN) {
     //     client.send(JSON.stringify({ tipo: "DADOS_INDIVIDUO", dados }));
