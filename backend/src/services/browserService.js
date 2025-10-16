@@ -1,4 +1,4 @@
-import puppeteer from "puppeteer-core"; // 👈 usa puppeteer-core para não baixar Chromium
+import puppeteer from "puppeteer";
 // import WebSocket, { WebSocketServer } from "ws";
 
 const USUARIO = "";
@@ -69,7 +69,8 @@ export async function iniciarLoginAutomático(usuario, senha) {
     }
 
     if (!browser || !page) {
-  browser = await puppeteer.launch({
+
+browser = await puppeteer.launch({
   headless: true,
   args: [
     "--no-sandbox",
@@ -79,8 +80,8 @@ export async function iniciarLoginAutomático(usuario, senha) {
     "--no-zygote",
     "--single-process",
     "--disable-gpu"
-  ],
-  executablePath: process.env.CHROME_PATH || "/usr/bin/chromium-browser"
+  ]
+  // executablePath não precisa, Puppeteer vai usar o Chromium baixado
 });
       page = await browser.newPage();
     }
