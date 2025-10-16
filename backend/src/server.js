@@ -6,9 +6,10 @@ const app = express();
 
 // CORS para permitir frontend no GitHub Pages
 app.use(cors({
-  origin: ["https://danieldss030225.github.io/p.Max", "http://localhost:3000"],
+  origin: ["https://danieldss030225.github.io", "http://localhost:3000"],
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "x-usuario", "x-senha"]
+  allowedHeaders: ["Content-Type", "x-usuario", "x-senha"],
+  credentials: true
 }));
 
 
