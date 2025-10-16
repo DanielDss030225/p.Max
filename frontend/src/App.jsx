@@ -45,8 +45,8 @@ function App() {
   const [mensagem, setMensagem] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [prontoParaPesquisa, setProntoParaPesquisa] = useState(false);
-  const wsRef = useRef(null);
-  const paginaTimerRef = useRef(null);
+  //const wsRef = useRef(null);
+  //const paginaTimerRef = useRef(null);
 
   const [usuario, setUsuario] = useState(localStorage.getItem("usuario") || "");
   const [senha, setSenha] = useState(localStorage.getItem("senha") || "");
@@ -55,85 +55,37 @@ function App() {
   const [appKey, setAppKey] = useState(0); // Força re-render após login/logout
 
   // Inicialização do WebSocket e fetch
-  useEffect(() => {
-    if (!logado) return;
+useEffect(() => {
+  if (!logado) return;
 
-    fetch("http://localhost:3000/api/init", {
-      headers: {
-        "x-usuario": localStorage.getItem("usuario"),
-        "x-senha": localStorage.getItem("senha")
-      }
-    })
-      .then(res => res.json())
-      .then(data => setMensagem(data.mensagem))
-      .catch(err => setMensagem("Erro ao inicializar sessão: " + err.message));
-
-    const criarWebSocket = () => {
-      const ws = new WebSocket("ws://localhost:8080");
-
-      ws.onopen = () => console.log("[WS] Conexão aberta");
-
-      ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-
-        if (msg.tipo === "URL") {
-          if (!msg.mensagem.includes("pesquisaIndividuo.do")) {
-            clearTimeout(paginaTimerRef.current);
-            setProntoParaPesquisa(false);
-          }
-        }
-
-        if (msg.tipo === "LOG") {
-          setMensagem(msg.mensagem && msg.mensagem.trim() ? msg.mensagem : "Aguarde...");
-          if (msg.mensagem.includes("Página de Pesquisa de Indivíduo carregada")) {
-            clearTimeout(paginaTimerRef.current);
-            paginaTimerRef.current = setTimeout(() => {
-              setProntoParaPesquisa(true);
-              setMensagem("✅ Sistema pronto para pesquisa.");
-            }, 1000);
-          }
-        }
-
-        if (msg.tipo === "ERRO") setMensagem("Erro: " + msg.mensagem);
-        if (msg.tipo === "DADOS_INDIVIDUO") {
-          setDados(msg.dados);
-          setCarregando(false);
-        }
-      };
-
-      ws.onclose = () => setTimeout(criarWebSocket, 3000);
-      wsRef.current = ws;
-      return ws;
-    };
-
-    criarWebSocket();
-
-    return () => {
-      if (wsRef.current) wsRef.current.close();
-      clearTimeout(paginaTimerRef.current);
-    };
-  }, [logado]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("usuario");
-    localStorage.removeItem("senha");
-
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
+  fetch("https://p-max.onrender.com/api/init", {
+    headers: {
+      "x-usuario": localStorage.getItem("usuario"),
+      "x-senha": localStorage.getItem("senha")
     }
+  })
+    .then(res => res.json())
+    .then(data => setMensagem(data.mensagem))
+    .catch(err => setMensagem("Erro ao inicializar sessão: " + err.message));
+}, [logado]);
 
-    setDados(null);
-    setMensagem("Você saiu do sistema.");
-    setProntoParaPesquisa(false);
-    setRg("");
 
-    setUsuario("");
-    setSenha("");
-    setLogado(false);
+const handleLogout = () => {
+  localStorage.removeItem("usuario");
+  localStorage.removeItem("senha");
 
-    setAppKey(prev => prev + 1); // força re-render
-  };
+  setDados(null);
+  setMensagem("Você saiu do sistema.");
+  setProntoParaPesquisa(false);
+  setRg("");
+
+  setUsuario("");
+  setSenha("");
+  setLogado(false);
+
+  setAppKey(prev => prev + 1); // força re-render
+};
+
 
   const handlePesquisar = async () => {
     const rgSomenteNumeros = rg.replace(/\D/g, "");
@@ -158,7 +110,7 @@ function App() {
     setCarregando(true);
 
     try {
-      const resp = await fetch("http://localhost:3000/api/pesquisar", {
+      const resp = await fetch("https://p-max.onrender.com/api/pesquisar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rg })
