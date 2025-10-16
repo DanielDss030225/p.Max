@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "preinstall": "apt-get update && apt-get install -y chromium-browser",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
   },
