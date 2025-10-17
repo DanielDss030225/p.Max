@@ -1,21 +1,8 @@
 import puppeteer from "puppeteer";
 // import WebSocket, { WebSocketServer } from "ws";
 
-const USUARIO = "";
-const SENHA = "";
-
 let browser, page;
 let currentURL = "";
-
-// WebSocket server opcional
-// const wss = new WebSocketServer({ port: 8080 });
-// wss.on("connection", (ws) => {
-//   console.log("[WS] Cliente conectado");
-//   if (currentURL) {
-//     ws.send(JSON.stringify({ tipo: "URL", mensagem: currentURL }));
-//     sendToFrontend("LOG", "Frontend reconectado. Status do backend enviado.");
-//   }
-// });
 
 // Enviar mensagens ao frontend ou log
 function sendToFrontend(tipo, mensagem) {
@@ -54,9 +41,7 @@ async function fecharPopups(page) {
         sendToFrontend("LOG", "Pop-up fechado");
         return true;
       }
-    } catch (err) {
-      sendToFrontend("ERRO", `Erro ao fechar pop-up: ${err.message}`);
-    }
+    } catch {}
   }
   return false;
 }
@@ -69,20 +54,19 @@ export async function iniciarLoginAutomático(usuario, senha) {
     }
 
     if (!browser || !page) {
-
-browser = await puppeteer.launch({
-  headless: true,
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-accelerated-2d-canvas",
-    "--no-zygote",
-    "--single-process",
-    "--disable-gpu"
-  ]
-  // executablePath não precisa, Puppeteer vai usar o Chromium baixado
-});
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-zygote",
+          "--single-process",
+          "--disable-gpu"
+        ],
+        executablePath: puppeteer.executablePath() // Chromium do Puppeteer
+      });
       page = await browser.newPage();
     }
 
@@ -170,6 +154,7 @@ export async function pesquisarPorRG(rg) {
       let artigos = [];
 
       const tabelas = Array.from(document.querySelectorAll("table[aria-hidden='true']"));
+
       const tabelaInquerito = tabelas.find(table =>
         Array.from(table.querySelectorAll("tr")).some(tr =>
           tr.querySelector("td span.label")?.textContent.trim() === "Quantidade de Inqueritos:"
@@ -211,13 +196,6 @@ export async function pesquisarPorRG(rg) {
         artigosInqueritos: artigos
       };
     });
-
-    // Envia dados via WebSocket se habilitado
-    // wss.clients.forEach(client => {
-    //   if (client.readyState === WebSocket.OPEN) {
-    //     client.send(JSON.stringify({ tipo: "DADOS_INDIVIDUO", dados }));
-    //   }
-    // });
 
     sendToFrontend("LOG", `Dados coletados do RG ${rg}`);
     return { sucesso: true, mensagem: "Pesquisa concluída ✅", dados };
