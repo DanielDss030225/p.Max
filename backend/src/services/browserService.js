@@ -65,7 +65,7 @@ export async function iniciarLoginAutomático(usuario, senha) {
     "--single-process",
     "--disable-gpu"
   ],
-  executablePath: process.env.CHROME_PATH
+
 });
 
       page = await browser.newPage();
