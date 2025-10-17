@@ -54,19 +54,20 @@ export async function iniciarLoginAutomático(usuario, senha) {
     }
 
     if (!browser || !page) {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-zygote",
-          "--single-process",
-          "--disable-gpu"
-        ],
-        executablePath: puppeteer.executablePath() // Chromium do Puppeteer
-      });
+   browser = await puppeteer.launch({
+  headless: true,
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-accelerated-2d-canvas",
+    "--no-zygote",
+    "--single-process",
+    "--disable-gpu"
+  ],
+  executablePath: process.env.CHROME_PATH
+});
+
       page = await browser.newPage();
     }
 
